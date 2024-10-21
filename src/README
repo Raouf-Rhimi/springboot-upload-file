@@ -1,0 +1,3 @@
+If you encounter some exceptions when running the server, please do the following steps:
+    1- enter "File | Settings | Build, Execution, Deployment | Compiler | user-local build process vm options" in Intellij
+    2- set this value "-Djps.track.ap.dependencies=false"

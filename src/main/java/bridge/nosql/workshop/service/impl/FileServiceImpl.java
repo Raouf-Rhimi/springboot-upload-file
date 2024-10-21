@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -18,8 +19,6 @@ import java.util.Optional;
 public class FileServiceImpl implements FileService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileServiceImpl.class.getName());
-
-
     private final FileRepository fileRepository;
 
     @Autowired
@@ -28,7 +27,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public ResponseEntity<?> uploadFile(MultipartFile fileToBeUploaded) {
+    public Mono<ResponseEntity<?>> uploadFile(MultipartFile fileToBeUploaded) {
         try {
             if(!this.fileExists(fileToBeUploaded.getOriginalFilename())) {
                 File file = new File();
@@ -36,27 +35,27 @@ public class FileServiceImpl implements FileService {
                 file.setContentType(fileToBeUploaded.getContentType());
                 file.setSize(fileToBeUploaded.getSize());
                 file.setData(fileToBeUploaded.getBytes());
-                return new ResponseEntity<>( "File Uploaded Successfully "+this.fileRepository.save(file).getFilename(), HttpStatus.CREATED);
+                return Mono.just(new ResponseEntity<>( "File Uploaded Successfully "+this.fileRepository.save(file).block().getFilename(), HttpStatus.CREATED));
             }else {
-                return new ResponseEntity<>("File already exists", HttpStatus.CONFLICT);
+                return Mono.just(new ResponseEntity<>("File already exists", HttpStatus.CONFLICT));
             }
         }catch (IOException e) {
-            return new ResponseEntity<>("Error when getting Date from file",HttpStatus.BAD_REQUEST);
+            return Mono.just(new ResponseEntity<>("Error when getting Date from file",HttpStatus.BAD_REQUEST));
         }
     }
 
     @Override
-    public ResponseEntity<?> downloadFile(String filename) {
-        Optional<File> optionalFile = this.fileRepository.findFileByFilename(filename);
-        if(optionalFile.isPresent()) {
-            File file = optionalFile.get();
-            return new ResponseEntity<>(file, HttpStatus.OK);
+    public Mono<ResponseEntity<?>> downloadFile(String filename) {
+        Mono<Optional<File>> optionalFile = this.fileRepository.findFileByFilename(filename);
+        if(optionalFile.block().isPresent()) {
+            File file = optionalFile.block().get();
+            return Mono.just(new ResponseEntity<>(file, HttpStatus.OK));
         }else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            return Mono.just(new ResponseEntity<>(HttpStatus.NOT_FOUND));
         }
     }
 
     private boolean fileExists(String filename) {
-        return fileRepository.existsByFilename(filename);
+        return fileRepository.existsByFilename(filename).block().booleanValue();
     }
 }

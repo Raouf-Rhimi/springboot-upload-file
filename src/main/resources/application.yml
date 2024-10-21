@@ -7,3 +7,5 @@ spring:
       database: files
 #      uri: mongodb://localhost:27017/
 #      database: files
+server:
+  port: 8082
